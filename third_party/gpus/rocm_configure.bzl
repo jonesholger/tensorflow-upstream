@@ -36,7 +36,7 @@ _ROCM_TOOLKIT_PATH = "ROCM_PATH"
 _TF_ROCM_AMDGPU_TARGETS = "TF_ROCM_AMDGPU_TARGETS"
 _TF_ROCM_CONFIG_REPO = "TF_ROCM_CONFIG_REPO"
 
-_DEFAULT_ROCM_TOOLKIT_PATH = "/opt/rocm"
+_DEFAULT_ROCM_TOOLKIT_PATH = "/opt/rocm-5.7.1"
 
 def verify_build_defines(params):
     """Verify all variables that crosstool/BUILD.rocm.tpl expects are substituted.
@@ -566,6 +566,8 @@ def _create_local_rocm_repository(repository_ctx):
         "rocm:rocm_config.h",
     ]}
 
+    print(tpl_paths)
+
     find_rocm_config_script = repository_ctx.path(Label("@org_tensorflow//third_party/gpus:find_rocm_config.py.gz.base64"))
 
     bash_bin = get_bash_bin(repository_ctx)
@@ -725,11 +727,19 @@ def _create_local_rocm_repository(repository_ctx):
         "-DEIGEN_USE_HIP",
     ])
 
-    rocm_defines["%{host_compiler_path}"] = "clang/bin/crosstool_wrapper_driver_is_not_gcc"
+    #rocm_defines["%{host_compiler_path}"] = "clang/bin/crosstool_wrapper_driver_is_not_gcc"
+    rocm_defines["%{host_compiler_path}"] = "clang/bin/crosstool_wrapper_driver_rocm"
 
     rocm_defines["%{cxx_builtin_include_directories}"] = to_list_of_strings(
         host_compiler_includes + _rocm_include_path(repository_ctx, rocm_config, bash_bin),
     )
+
+    rocm_defines["%{cxx_builtin_include_directories}"] += ', \"/opt/rh/gcc-toolset-10/root/usr/include/c++/10/cmath\"'
+    rocm_defines["%{cxx_builtin_include_directories}"] += ', \"/opt/rh/gcc-toolset-10/root/usr/include/c++/10/pstl\"'
+    rocm_defines["%{cxx_builtin_include_directories}"] += ', \"/opt/rh/gcc-toolset-10/root/usr/include/c++/10/\"'
+    rocm_defines["%{cxx_builtin_include_directories}"] += ', \"/opt/rh/gcc-toolset-10/root/usr/include/c++/10/x86_64-redhat-linux\"'
+
+    print(rocm_defines)
 
     verify_build_defines(rocm_defines)
 
@@ -748,7 +758,7 @@ def _create_local_rocm_repository(repository_ctx):
     )
 
     repository_ctx.template(
-        "crosstool/clang/bin/crosstool_wrapper_driver_is_not_gcc",
+        "crosstool/clang/bin/crosstool_wrapper_driver_rocm",
         tpl_paths["crosstool:clang/bin/crosstool_wrapper_driver_rocm"],
         {
             "%{cpu_compiler}": str(cc),
@@ -829,11 +839,13 @@ def _rocm_autoconf_impl(repository_ctx):
     if not _enable_rocm(repository_ctx):
         _create_dummy_repository(repository_ctx)
     elif get_host_environ(repository_ctx, _TF_ROCM_CONFIG_REPO) != None:
+        print("create_remote_rocm_repo")
         _create_remote_rocm_repository(
             repository_ctx,
             get_host_environ(repository_ctx, _TF_ROCM_CONFIG_REPO),
         )
     else:
+        print("create local rocm repo")
         _create_local_rocm_repository(repository_ctx)
 
 _ENVIRONS = [

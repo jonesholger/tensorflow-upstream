@@ -1,0 +1,19 @@
+build --action_env PYTHON_BIN_PATH="/g/g0/holger/workspace/miniconda/env_rocm/bin/python3"
+build --action_env PYTHON_LIB_PATH="/g/g0/holger/workspace/miniconda/env_rocm/lib/python3.9/site-packages"
+build --python_path="/g/g0/holger/workspace/miniconda/env_rocm/bin/python3"
+build --config=rocm
+build --action_env LD_LIBRARY_PATH="/opt/cray/pe/papi/6.0.0.15/lib64:/opt/rocm-5.7.1/lib:/opt/rocm-5.7.1/hip/lib:/opt/rocm-5.7.1/hsa/lib:/opt/cray/pe/lib64:/opt/cray/lib64:/opt/cray/libfabric/2.0/lib64"
+build --action_env ROCM_PATH="/opt/rocm-5.7.1"
+build --action_env CLANG_COMPILER_PATH="/usr/tce/packages/rocmcc/rocmcc-5.7.1-magic/bin/amdclang++"
+build --repo_env=CC=/usr/tce/packages/rocmcc/rocmcc-5.7.1-magic/bin/amdclang++
+#build --repo_env=CC=/usr/tce/bin/gcc
+build --repo_env=BAZEL_COMPILER=/usr/tce/packages/rocmcc/rocmcc-5.7.1-magic/bin/amdclang++
+build --copt=-Wno-gnu-offsetof-extensions
+build:opt --copt=-Wno-sign-compare
+build:opt --host_copt=-Wno-sign-compare
+test --test_size_filters=small,medium
+test --test_env=LD_LIBRARY_PATH
+test:v1 --test_tag_filters=-benchmark-test,-no_oss,-oss_excluded,-no_gpu,-oss_serial
+test:v1 --build_tag_filters=-benchmark-test,-no_oss,-oss_excluded,-no_gpu
+test:v2 --test_tag_filters=-benchmark-test,-no_oss,-oss_excluded,-no_gpu,-oss_serial,-v1only
+test:v2 --build_tag_filters=-benchmark-test,-no_oss,-oss_excluded,-no_gpu,-v1only
